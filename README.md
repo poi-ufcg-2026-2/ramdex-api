@@ -10,6 +10,55 @@ dominar o tempo de execução, a latência sobe e, no limite, ocorre `OutOfMemor
 A aplicação foi implementada em **Java puro**: servidor HTTP, roteamento, JSON e multipart usam apenas o JDK. O único artefato
 externo é o JUnit, usado só nos testes.
 
+## Sobre a aplicação
+
+A RAMdex API é um **motor de busca textual**: um serviço que guarda uma coleção de textos e permite encontrar
+rapidamente quais deles falam de determinado assunto. É o mesmo tipo de serviço que fica por trás da caixa de busca
+de um site de notícias, do catálogo de uma biblioteca ou da pesquisa na documentação interna de uma empresa. Uma
+pessoa digita algumas palavras e recebe a lista dos textos mais relevantes, com um trecho de cada um.
+
+A aplicação só tem backend: não há telas, e o acesso é feito por requisições HTTP (pelo Postman, por exemplo).
+
+### Conceitos principais
+
+**Documento.** É cada texto guardado no sistema: uma notícia, um artigo, uma anotação, um arquivo `.txt` ou `.md`.
+Cada documento tem um identificador (`id`), um título e o conteúdo. Ele pode ser enviado pelo usuário
+(`POST /documents`) ou criado automaticamente pelo gerador sintético (`POST /generate`).
+
+**Termo.** É cada palavra do texto depois de normalizada: em minúsculas, sem acentos e sem pontuação. Palavras muito
+comuns, como "de", "a" e "que", são descartadas, porque aparecem em quase todo texto e não ajudam a distinguir um
+documento do outro. Assim, "Memória", "memória" e "MEMORIA" viram o mesmo termo, `memoria`. É o termo, e não a
+palavra exatamente como foi escrita, que o sistema usa para encontrar os documentos.
+
+**Índice (índice invertido).** É a estrutura que torna a busca rápida. Funciona como o índice remissivo no fim de um
+livro: para cada termo, ele guarda a lista dos documentos em que o termo aparece (e em que posições).
+
+Para responder a uma busca por "memória", o sistema não lê todos os textos. Ele consulta a entrada `memoria` do
+índice e já tem a resposta. O nome "invertido" vem daí: em vez de guardar "documento → palavras que ele contém", o
+índice guarda o contrário, "termo → documentos que o contêm".
+
+### O que a aplicação faz
+
+1. **Indexação.** Quando um documento chega, o texto é quebrado em termos, e o documento é acrescentado à lista de
+   cada um deles no índice.
+2. **Busca.** Quando chega uma consulta, a aplicação pega a lista de cada termo e combina os resultados:
+   - no modo **AND**, ficam os documentos que contêm *todos* os termos;
+   - no modo **OR**, os que contêm *pelo menos um*.
+
+   Em seguida, ordena por relevância. Um documento fica mais bem colocado quando o termo aparece muitas vezes nele e
+   é raro nos demais.
+3. **Métricas.** O endpoint `/stats` informa o tamanho do índice e quanto de memória a aplicação está usando.
+
+### Onde está a característica memory-bound
+
+Todo o índice e todos os documentos ficam **na memória RAM**, sem banco de dados e sem arquivos em disco. Por isso,
+quanto mais documentos indexados, mais memória a aplicação ocupa: cerca de 12 MB a cada 1.000 documentos de 200
+palavras. A CPU gasta por busca é pequena; o que limita a aplicação é a quantidade de memória disponível.
+
+Mais documentos e mais acessos simultâneos pressionam a memória de formas diferentes. Mais documentos aumentam o
+tamanho **permanente** do índice. Mais buscas simultâneas aumentam a memória **temporária**, porque cada busca cria
+estruturas que são descartadas logo depois e que o coletor de lixo da JVM precisa limpar.
+
 ## Requisitos
 
 - JDK 17 ou superior (`java -version`)
