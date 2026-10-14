@@ -1,0 +1,16 @@
+[Unit]
+Description=RAMdex API - motor de busca em memória
+After=network.target
+
+[Service]
+User=osboxes
+WorkingDirectory=/home/osboxes/ramdex
+# JAVA_OPTS e PORT ficam em ramdex.env (editável sem sudo; o runner dos experimentos reescreve esse arquivo).
+EnvironmentFile=/home/osboxes/ramdex/ramdex.env
+ExecStart=/usr/bin/java $JAVA_OPTS -jar /home/osboxes/ramdex/ramdex-api.jar
+Restart=on-failure
+RestartSec=2
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
