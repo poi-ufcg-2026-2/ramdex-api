@@ -111,7 +111,7 @@ public final class SyntheticGenerator {
         return Math.min(i >= 0 ? i : -i - 1, cumulative.length - 1);
     }
 
-    public static SampleTerms sampleTerms(int vocabSize) {
+    private static SampleTerms sampleTerms(int vocabSize) {
         return new SampleTerms(range(0, 5, vocabSize), range(vocabSize / 100, 5, vocabSize), range(vocabSize / 2, 5, vocabSize));
     }
 

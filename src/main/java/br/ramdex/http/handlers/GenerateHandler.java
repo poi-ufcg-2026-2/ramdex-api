@@ -43,16 +43,6 @@ public final class GenerateHandler {
                 "heapUsedMb", RuntimeMetrics.usedHeapMb()));
     }
 
-    /**
-     * {@code GET /generate/terms?vocabSize=50000}: termos de exemplo do vocabulário sintético,
-     * sem gerar nada. Como o vocabulário é determinístico, são os mesmos devolvidos por
-     * {@code POST /generate} com o mesmo {@code vocabSize} (útil para montar a carga dos testes).
-     */
-    public Response terms(Request req) {
-        int vocabSize = req.queryInt("vocabSize", 50_000, 10, 1_000_000);
-        return Response.ok(SyntheticGenerator.sampleTerms(vocabSize));
-    }
-
     private static long integer(Map<String, Object> json, String name, long defaultValue) {
         Object value = json.get(name);
         if (value == null) {

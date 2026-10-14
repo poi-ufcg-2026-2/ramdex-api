@@ -47,8 +47,7 @@ public final class Main {
                 .get("/documents/{id}", documents::get)
                 .delete("/documents/{id}", documents::delete)
                 .get("/search", search::search)
-                .post("/generate", generate::generate)
-                .get("/generate/terms", generate::terms);
+                .post("/generate", generate::generate);
 
         // Sem TCP_NODELAY, o algoritmo de Nagle somado ao ACK atrasado do TCP adiciona ~40 ms
         // a cada requisição numa conexão keep-alive, o que distorceria os testes de carga.

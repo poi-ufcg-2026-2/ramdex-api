@@ -4,4 +4,3 @@ target/
 .idea/
 .vscode/
 *.iml
-experiments/bin/

@@ -451,45 +451,6 @@
       "name": "4. Gerador sintético",
       "item": [
         {
-          "name": "Termos de exemplo (sem gerar)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/generate/terms?vocabSize=50000",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "generate",
-                "terms"
-              ],
-              "query": [
-                {
-                  "key": "vocabSize",
-                  "value": "50000"
-                }
-              ]
-            },
-            "description": "Devolve os termos de exemplo do vocabulário sintético sem gerar documentos. São os mesmos que o POST /generate devolve para o mesmo vocabSize; os scripts de experimento usam este endpoint para montar as buscas da carga."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"tem termos frequentes, médios e raros\", () => {",
-                  "    const t = pm.response.json();",
-                  "    [\"frequent\", \"medium\", \"rare\"].forEach(k => pm.expect(t[k]).to.be.an(\"array\").that.is.not.empty);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "name": "Gerar 10 mil documentos",
           "request": {
             "method": "POST",
