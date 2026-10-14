@@ -1,0 +1,4 @@
+Um índice invertido associa cada termo à lista de documentos em que ele aparece.
+É a estrutura de dados usada por motores de busca para responder consultas rapidamente:
+em vez de percorrer todos os documentos, basta consultar as listas dos termos pesquisados
+e combinar os resultados. Quanto mais documentos indexados, mais memória o índice ocupa.
