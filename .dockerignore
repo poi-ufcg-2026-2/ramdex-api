@@ -1,0 +1,9 @@
+target/
+experimentos/
+atividade-2/
+postman/
+*.pdf
+*.csv
+.git/
+.idea/
+.vscode/
