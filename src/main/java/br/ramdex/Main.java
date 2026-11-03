@@ -3,6 +3,7 @@ package br.ramdex;
 import br.ramdex.http.Router;
 import br.ramdex.http.handlers.DocumentsHandler;
 import br.ramdex.http.handlers.GenerateHandler;
+import br.ramdex.http.handlers.PageHandler;
 import br.ramdex.http.handlers.SearchHandler;
 import br.ramdex.http.handlers.StatsHandler;
 import br.ramdex.index.InvertedIndex;
@@ -37,8 +38,10 @@ public final class Main {
         SearchHandler search = new SearchHandler(index);
         GenerateHandler generate = new GenerateHandler(index);
         StatsHandler stats = new StatsHandler(index, threads, maxBodyMb);
+        PageHandler page = new PageHandler();
 
         Router router = new Router(maxBodyMb * 1024 * 1024)
+                .get("/", page::index)
                 .get("/health", stats::health)
                 .get("/stats", stats::stats)
                 .delete("/index", stats::clear)

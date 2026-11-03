@@ -87,6 +87,7 @@ Todas as respostas são JSON. Erros vêm como `{"error": "mensagem"}`.
 
 | Método | Rota | Descrição |
 |---|---|---|
+| GET | `/` | Página web para usar a API pelo navegador |
 | GET | `/health` | Verificação de saúde |
 | GET | `/stats` | Tamanho do índice, heap, GC, memória/CPU do sistema |
 | POST | `/documents` | Indexa um documento de texto (ver formatos abaixo). `201` |

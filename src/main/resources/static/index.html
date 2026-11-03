@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAMdex</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #667085; --line: #e3e6eb;
+    --accent: #2f6fde; --accent-text: #ffffff; --ok: #1f9d55; --warn: #d98b00; --bad: #d64545;
+    --bar: #e9edf3; --code: #f1f3f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --card: #1c2027; --text: #e6e9ef; --muted: #9aa3b2; --line: #2c323c;
+      --accent: #5b8ff0; --accent-text: #0e1116; --ok: #3cc47c; --warn: #f0b03c; --bad: #ef6b6b;
+      --bar: #2a3039; --code: #232831;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 16px 8px; max-width: 1100px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 24px; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  main { max-width: 1100px; margin: 0 auto; padding: 8px 16px 32px;
+         display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 16px; }
+  .stack { display: grid; gap: 16px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  input, select, textarea, button { font: inherit; color: inherit; }
+  input[type=text], input[type=number], select, textarea {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+  input[type=text] { flex: 1 1 220px; }
+  textarea { width: 100%; min-height: 90px; resize: vertical; }
+  button { background: var(--accent); color: var(--accent-text); border: 0; border-radius: 8px;
+           padding: 8px 14px; cursor: pointer; font-weight: 600; }
+  button.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  button.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+  button:disabled { opacity: .6; cursor: progress; }
+  label { color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .msg { margin-top: 8px; font-size: 13px; min-height: 1em; }
+  .msg.err { color: var(--bad); } .msg.ok { color: var(--ok); }
+  .result { border-top: 1px solid var(--line); padding: 10px 0; }
+  .result:first-child { border-top: 0; }
+  .result a { color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: none; }
+  .result .meta { color: var(--muted); font-size: 12px; }
+  .result pre { white-space: pre-wrap; background: var(--code); padding: 10px; border-radius: 8px;
+                font-size: 13px; max-height: 260px; overflow: auto; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .chip { background: var(--code); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px;
+          font-size: 13px; cursor: pointer; }
+  .stat { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+  .stat:last-child { border-bottom: 0; }
+  .stat b { font-variant-numeric: tabular-nums; }
+  .bar { height: 10px; background: var(--bar); border-radius: 999px; overflow: hidden; margin: 6px 0 2px; }
+  .bar > div { height: 100%; width: 0; background: var(--ok); transition: width .4s, background .4s; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RAMdex</h1>
+  <p>Motor de busca em memória (índice invertido). Todo o índice fica na RAM.</p>
+</header>
+
+<main>
+  <div class="stack">
+    <section class="card">
+      <h2>Buscar</h2>
+      <form id="search-form" class="row">
+        <input type="text" id="q" placeholder="ex.: índice memória" autocomplete="off" required>
+        <select id="mode" title="Modo">
+          <option value="and">todos os termos (AND)</option>
+          <option value="or">qualquer termo (OR)</option>
+        </select>
+        <button type="submit">Buscar</button>
+      </form>
+      <div id="search-info" class="msg"></div>
+      <div id="results"></div>
+    </section>
+
+    <section class="card">
+      <h2>Adicionar documento</h2>
+      <form id="doc-form" class="stack" style="gap:10px">
+        <label>Título<input type="text" id="doc-title" placeholder="opcional"></label>
+        <label>Conteúdo<textarea id="doc-content" placeholder="cole um texto aqui…"></textarea></label>
+        <label>…ou envie um arquivo .txt / .md<input type="file" id="doc-file" accept=".txt,.md,text/plain,text/markdown"></label>
+        <div><button type="submit">Indexar</button></div>
+      </form>
+      <div id="doc-msg" class="msg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Gerar documentos sintéticos</h2>
+      <form id="gen-form" class="row">
+        <label>Quantidade<input type="number" id="gen-docs" value="1000" min="1" max="10000" step="1"></label>
+        <label>Seed<input type="number" id="gen-seed" value="42" step="1"></label>
+        <div style="align-self:end"><button type="submit">Gerar</button></div>
+      </form>
+      <p class="muted">Cada 1.000 documentos ocupam cerca de 12 MB de heap. Limite de 10 mil por vez nesta página.</p>
+      <div id="gen-msg" class="msg"></div>
+      <div id="gen-terms"></div>
+    </section>
+  </div>
+
+  <aside class="card">
+    <h2>Memória e índice</h2>
+    <div class="muted">Heap usado</div>
+    <div class="bar"><div id="heap-bar"></div></div>
+    <div class="muted" id="heap-text">–</div>
+    <div style="margin-top:12px">
+      <div class="stat"><span>Documentos</span><b id="s-docs">–</b></div>
+      <div class="stat"><span>Termos distintos</span><b id="s-terms">–</b></div>
+      <div class="stat"><span>Postings</span><b id="s-postings">–</b></div>
+      <div class="stat"><span>Coletas do GC</span><b id="s-gc">–</b></div>
+      <div class="stat"><span>Tempo total de GC</span><b id="s-gctime">–</b></div>
+      <div class="stat"><span>RAM visível à JVM</span><b id="s-sys">–</b></div>
+      <div class="stat"><span>No ar há</span><b id="s-uptime">–</b></div>
+    </div>
+    <p class="muted">Atualiza a cada 5 s.</p>
+    <div class="row">
+      <button class="secondary" id="refresh">Atualizar</button>
+      <button class="danger" id="clear">Esvaziar índice</button>
+    </div>
+    <div id="clear-msg" class="msg"></div>
+  </aside>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Number(n).toLocaleString('pt-BR');
+
+async function api(method, path, body, headers) {
+  const res = await fetch(path, { method, body, headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+  return data;
+}
+
+function show(el, text, kind) {
+  el.textContent = text;
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+}
+
+async function busy(button, fn) {
+  button.disabled = true;
+  try { await fn(); } finally { button.disabled = false; }
+}
+
+// ---- busca ----
+$('search-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  busy(e.submitter || e.target.querySelector("button"), search);
+});
+
+async function search() {
+  const q = $('q').value.trim();
+  if (!q) return;
+  const params = new URLSearchParams({ q, mode: $('mode').value, limit: 10 });
+  const box = $('results');
+  box.replaceChildren();
+  try {
+    const r = await api('GET', '/search?' + params);
+    show($('search-info'), `${fmt(r.total)} documento(s) encontrados em ${r.tookMs} ms` +
+      (r.total > r.results.length ? ` · mostrando os ${r.results.length} mais relevantes` : '') +
+      ` · termos: ${r.terms.join(', ') || '—'}`);
+    for (const hit of r.results) box.append(resultItem(hit));
+  } catch (err) {
+    show($('search-info'), err.message, 'err');
+  }
+}
+
+function resultItem(hit) {
+  const div = document.createElement('div');
+  div.className = 'result';
+  const a = document.createElement('a');
+  a.textContent = hit.title;
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = `id ${hit.id} · score ${hit.score}`;
+  const snippet = document.createElement('div');
+  snippet.textContent = hit.snippet;
+  a.addEventListener('click', async () => {
+    const open = div.querySelector('pre');
+    if (open) { open.remove(); return; }
+    try {
+      const doc = await api('GET', '/documents/' + hit.id);
+      const pre = document.createElement('pre');
+      pre.textContent = doc.content;
+      div.append(pre);
+    } catch (err) { meta.textContent += ' · ' + err.message; }
+  });
+  div.append(a, meta, snippet);
+  return div;
+}
+
+// ---- adicionar documento ----
+$('doc-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  busy(e.submitter || e.target.querySelector("button"), addDocument);
+});
+
+async function addDocument() {
+  const title = $('doc-title').value.trim();
+  const content = $('doc-content').value;
+  const file = $('doc-file').files[0];
+  try {
+    let doc;
+    if (file) {
+      const form = new FormData();
+      form.append('file', file);
+      if (title) form.append('title', title);
+      doc = await api('POST', '/documents', form);
+    } else {
+      if (!content.trim()) throw new Error('escreva um conteúdo ou escolha um arquivo');
+      doc = await api('POST', '/documents', JSON.stringify({ title, content }),
+        { 'Content-Type': 'application/json' });
+    }
+    show($('doc-msg'), `Documento ${doc.id} indexado: "${doc.title}" (${fmt(doc.tokens)} termos)`, 'ok');
+    $('doc-form').reset();
+    refreshStats();
+  } catch (err) {
+    show($('doc-msg'), err.message, 'err');
+  }
+}
+
+// ---- gerador ----
+$('gen-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  busy(e.submitter || e.target.querySelector("button"), generate);
+});
+
+async function generate() {
+  const docs = Math.min(10000, Math.max(1, parseInt($('gen-docs').value, 10) || 1000));
+  const seed = parseInt($('gen-seed').value, 10) || 42;
+  show($('gen-msg'), 'gerando…');
+  try {
+    const r = await api('POST', '/generate', JSON.stringify({ docs, seed }),
+      { 'Content-Type': 'application/json' });
+    show($('gen-msg'), `${fmt(r.generated)} documentos em ${fmt(r.elapsedMs)} ms ` +
+      `(${fmt(r.docsPerSecond)} docs/s) · heap usado: ${r.heapUsedMb} MB`, 'ok');
+    const terms = $('gen-terms');
+    terms.replaceChildren();
+    const label = document.createElement('div');
+    label.className = 'muted';
+    label.textContent = 'Termos para testar a busca (clique):';
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    for (const t of [...r.sampleTerms.frequent, ...r.sampleTerms.medium, ...r.sampleTerms.rare]) {
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = t;
+      c.addEventListener('click', () => { $('q').value = t; search(); });
+      chips.append(c);
+    }
+    terms.append(label, chips);
+    refreshStats();
+  } catch (err) {
+    show($('gen-msg'), err.message, 'err');
+  }
+}
+
+// ---- métricas ----
+function uptime(ms) {
+  const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return h ? `${h} h ${m} min` : m ? `${m} min ${s % 60} s` : `${s} s`;
+}
+
+async function refreshStats() {
+  try {
+    const s = await api('GET', '/stats');
+    const heap = s.memory.heap;
+    const pct = heap.maxMb > 0 ? heap.usedMb / heap.maxMb * 100 : 0;
+    const bar = $('heap-bar');
+    bar.style.width = Math.min(100, pct).toFixed(1) + '%';
+    bar.style.background = pct >= 80 ? 'var(--bad)' : pct >= 60 ? 'var(--warn)' : 'var(--ok)';
+    $('heap-text').textContent = `${heap.usedMb} MB de ${heap.maxMb} MB (${pct.toFixed(1)}%)`;
+    $('s-docs').textContent = fmt(s.index.documents);
+    $('s-terms').textContent = fmt(s.index.terms);
+    $('s-postings').textContent = fmt(s.index.postings);
+    $('s-gc').textContent = fmt(s.gc.reduce((n, g) => n + g.collections, 0));
+    $('s-gctime').textContent = fmt(s.gc.reduce((n, g) => n + g.timeMs, 0)) + ' ms';
+    $('s-sys').textContent = `${fmt(Math.round(s.system.totalMemoryMb))} MB`;
+    $('s-uptime').textContent = uptime(s.jvm.uptimeMs);
+  } catch (err) {
+    $('heap-text').textContent = 'erro ao ler /stats: ' + err.message;
+  }
+}
+
+$('refresh').addEventListener('click', refreshStats);
+
+$('clear').addEventListener('click', (e) => {
+  if (!confirm('Remover TODOS os documentos do índice?')) return;
+  busy(e.currentTarget, async () => {
+    try {
+      const r = await api('DELETE', '/index?gc=true');
+      show($('clear-msg'), `${fmt(r.removedDocuments)} documentos removidos · heap ` +
+        `${r.heapBeforeMb} → ${r.heapAfterMb} MB`, 'ok');
+      refreshStats();
+    } catch (err) { show($('clear-msg'), err.message, 'err'); }
+  });
+});
+
+refreshStats();
+setInterval(refreshStats, 5000);
+</script>
+</body>
+</html>

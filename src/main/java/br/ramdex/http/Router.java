@@ -120,7 +120,9 @@ public final class Router implements HttpHandler {
     }
 
     private static void send(HttpExchange exchange, Response response) throws IOException {
-        byte[] bytes = Json.stringify(response.body()).getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = response.body() instanceof byte[] raw
+                ? raw
+                : Json.stringify(response.body()).getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
         response.headers().forEach(exchange.getResponseHeaders()::set);
         exchange.sendResponseHeaders(response.status(), bytes.length);

@@ -14,6 +14,11 @@ public record Response(int status, Object body, Map<String, String> headers) {
         return new Response(201, body, Map.of("Location", location));
     }
 
+    /** Página HTML: o corpo em bytes é enviado como está, sem passar pelo JSON. */
+    public static Response html(byte[] page) {
+        return new Response(200, page, Map.of("Content-Type", "text/html; charset=utf-8"));
+    }
+
     /** Atalho para montar corpos JSON com campos em ordem: {@code fields("a", 1, "b", 2)}. */
     public static Map<String, Object> fields(Object... keyValues) {
         Map<String, Object> map = new LinkedHashMap<>();
