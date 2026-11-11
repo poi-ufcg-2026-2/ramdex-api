@@ -9,8 +9,11 @@ RUN MAVEN_OPTS=-Xmx256m mvn -q package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/target/ramdex-api.jar .
+
+RUN mkdir -p /logs
+VOLUME /logs
+
+ENV JAVA_OPTS="-Xmx512m -XX:+UseG1GC -Xlog:gc*:file=/logs/gc.log:time,uptime,level,tags:filecount=5,filesize=10m"
+
 EXPOSE 8080
-# A saída da aplicação (stdout/stderr) vai para /logs/application.log.
-# Monte um diretório do host em /logs (docker run --mount type=bind,src=...,dst=/logs).
-# Flags da JVM (heap, log do GC) entram pela variável JAVA_OPTS.
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar ramdex-api.jar >> /logs/application.log 2>&1"]
